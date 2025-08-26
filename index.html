@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Identification Decision Tree</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 40px;
+            font-size: 1.2em;
+        }
+        
+        /* Interactive Section */
+        .interactive-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            color: #333;
+            font-size: 1.8em;
+            margin-bottom: 30px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .question-container {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .question-container.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .question-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        
+        .question-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .question-text {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+        
+        .question-description {
+            font-size: 1em;
+            opacity: 0.95;
+            font-style: italic;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .decision-btn {
+            padding: 15px 40px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            text-transform: uppercase;
+        }
+        
+        .decision-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+        
+        .btn-yes {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+        
+        .btn-no {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+        
+        .result-box {
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        .result-box.system {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+        
+        .result-box.not-system {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+        
+        .result-box.unclear {
+            background: linear-gradient(135deg, #ffa502, #ff6348);
+            color: white;
+        }
+        
+        .result-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        
+        .result-title {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .result-description {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            opacity: 0.95;
+        }
+        
+        .reset-btn {
+            padding: 12px 30px;
+            font-size: 1.1em;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .reset-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+        
+        /* Static Tree Section */
+        .static-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow-x: auto;
+        }
+        
+        .tree-diagram {
+            min-width: 1000px;
+            padding: 20px;
+        }
+        
+        .tree-svg {
+            width: 100%;
+            height: 700px;
+        }
+        
+        .node-rect {
+            fill: url(#nodeGradient);
+            stroke: none;
+            rx: 10;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .node-rect:hover {
+            filter: brightness(1.1);
+        }
+        
+        .result-rect-system {
+            fill: url(#systemGradient);
+        }
+        
+        .result-rect-not {
+            fill: url(#notSystemGradient);
+        }
+        
+        .result-rect-unclear {
+            fill: url(#unclearGradient);
+        }
+        
+        .node-text {
+            fill: white;
+            font-size: 14px;
+            font-weight: 600;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+        
+        .edge-line {
+            stroke: #999;
+            stroke-width: 2;
+            fill: none;
+        }
+        
+        .edge-label {
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .edge-label-yes {
+            fill: #4CAF50;
+        }
+        
+        .edge-label-no {
+            fill: #ff6b6b;
+        }
+        
+        @media (max-width: 768px) {
+            .tree-diagram {
+                min-width: 100%;
+                overflow-x: auto;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .decision-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 System Identification Decision Tree</h1>
+        <p class="subtitle">Determine if you're looking at a system or just a collection of elements</p>
+        
+        <!-- Interactive Section -->
+        <div class="interactive-section">
+            <h2 class="section-title">
+                <span>🎮</span>
+                <span>Interactive Decision Path</span>
+            </h2>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+            
+            <div id="questionArea">
+                <!-- Question 1 -->
+                <div class="question-container active" id="q1">
+                    <div class="question-box">
+                        <div class="question-number">Question 1 of 4</div>
+                        <div class="question-text">Can you identify the elements?</div>
+                        <div class="question-description">Are you able to distinguish and name the individual parts or components?</div>
+                    </div>
+                    <div class="button-group">
+                        <button class="decision-btn btn-no" onclick="handleAnswer(1, false)">No</button>
+                        <button class="decision-btn btn-yes" onclick="handleAnswer(1, true)">Yes</button>
+                    </div>
+                </div>
+                
+                <!-- Question 2 -->
+                <div class="question-container" id="q2">
+                    <div class="question-box">
+                        <div class="question-number">Question 2 of 4</div>
+                        <div class="question-text">Do the elements affect each other?</div>
+                        <div class="question-description">Is there interaction, influence, or relationships between the parts?</div>
+                    </div>
+                    <div class="button-group">
+                        <button class="decision-btn btn-no" onclick="handleAnswer(2, false)">No</button>
+                        <button class="decision-btn btn-yes" onclick="handleAnswer(2, true)">Yes</button>
+                    </div>
+                </div>
+                
+                <!-- Question 3 -->
+                <div class="question-container" id="q3">
+                    <div class="question-box">
+                        <div class="question-number">Question 3 of 4</div>
+                        <div class="question-text">Do the parts together produce a different effect?</div>
+                        <div class="question-description">Is there emergent behavior or properties that individual elements don't have alone?</div>
+                    </div>
+                    <div class="button-group">
+                        <button class="decision-btn btn-no" onclick="handleAnswer(3, false)">No</button>
+                        <button class="decision-btn btn-yes" onclick="handleAnswer(3, true)">Yes</button>
+                    </div>
+                </div>
+                
+                <!-- Question 4 -->
+                <div class="question-container" id="q4">
+                    <div class="question-box">
+                        <div class="question-number">Question 4 of 4</div>
+                        <div class="question-text">Does the effect persist in various circumstances?</div>
+                        <div class="question-description">Is the behavior consistent and robust across different conditions over time?</div>
+                    </div>
+                    <div class="button-group">
+                        <button class="decision-btn btn-no" onclick="handleAnswer(4, false)">No</button>
+                        <button class="decision-btn btn-yes" onclick="handleAnswer(4, true)">Yes</button>
+                    </div>
+                </div>
+                
+                <!-- Results -->
+                <div class="question-container" id="result">
+                    <div class="result-box" id="resultBox">
+                        <div class="result-icon" id="resultIcon"></div>
+                        <div class="result-title" id="resultTitle"></div>
+                        <div class="result-description" id="resultDescription"></div>
+                        <button class="reset-btn" onclick="resetQuiz()">Start Over</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Static Tree Section -->
+        <div class="static-section">
+            <h2 class="section-title">
+                <span>🌳</span>
+                <span>Complete Decision Tree Diagram</span>
+            </h2>
+            
+            <div class="tree-diagram">
+                <svg class="tree-svg" viewBox="0 0 1200 700">
+                    <defs>
+                        <linearGradient id="nodeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="systemGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#45a049;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="notSystemGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ee5a24;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="unclearGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ffa502;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ff6348;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    
+                    <!-- Root Question 1 -->
+                    <rect class="node-rect" x="450" y="20" width="300" height="60" />
+                    <text class="node-text" x="600" y="45">1. Can you identify the elements?</text>
+                    <text class="node-text" x="600" y="65" style="font-size:11px; opacity:0.9;">Distinguish individual parts?</text>
+                    
+                    <!-- Q1 NO Branch -->
+                    <line class="edge-line" x1="500" y1="80" x2="200" y2="140" />
+                    <text class="edge-label edge-label-no" x="320" y="105">NO</text>
+                    
+                    <rect class="result-rect-unclear node-rect" x="50" y="140" width="300" height="60" />
+                    <text class="node-text" x="200" y="165">🤔 Cannot Determine</text>
+                    <text class="node-text" x="200" y="185" style="font-size:11px;">Need to identify elements first</text>
+                    
+                    <!-- Q1 YES Branch to Q2 -->
+                    <line class="edge-line" x1="700" y1="80" x2="700" y2="140" />
+                    <text class="edge-label edge-label-yes" x="710" y="110">YES</text>
+                    
+                    <rect class="node-rect" x="550" y="140" width="300" height="60" />
+                    <text class="node-text" x="700" y="165">2. Do elements affect each other?</text>
+                    <text class="node-text" x="700" y="185" style="font-size:11px;">Interaction between parts?</text>
+                    
+                    <!-- Q2 NO Branch -->
+                    <line class="edge-line" x1="600" y1="200" x2="400" y2="260" />
+                    <text class="edge-label edge-label-no" x="480" y="225">NO</text>
+                    
+                    <rect class="result-rect-not node-rect" x="250" y="260" width="300" height="60" />
+                    <text class="node-text" x="400" y="285">📦 Just a Collection</text>
+                    <text class="node-text" x="400" y="305" style="font-size:11px;">Independent elements</text>
+                    
+                    <!-- Q2 YES Branch to Q3 -->
+                    <line class="edge-line" x1="800" y1="200" x2="800" y2="260" />
+                    <text class="edge-label edge-label-yes" x="810" y="230">YES</text>
+                    
+                    <rect class="node-rect" x="650" y="260" width="300" height="60" />
+                    <text class="node-text" x="800" y="285">3. Parts produce different effect?</text>
+                    <text class="node-text" x="800" y="305" style="font-size:11px;">Emergent properties?</text>
+                    
+                    <!-- Q3 NO Branch -->
+                    <line class="edge-line" x1="700" y1="320" x2="500" y2="380" />
+                    <text class="edge-label edge-label-no" x="580" y="345">NO</text>
+                    
+                    <rect class="result-rect-not node-rect" x="350" y="380" width="300" height="60" />
+                    <text class="node-text" x="500" y="405">🔗 Connected Elements</text>
+                    <text class="node-text" x="500" y="425" style="font-size:11px;">No emergent properties</text>
+                    
+                    <!-- Q3 YES Branch to Q4 -->
+                    <line class="edge-line" x1="900" y1="320" x2="900" y2="380" />
+                    <text class="edge-label edge-label-yes" x="910" y="350">YES</text>
+                    
+                    <rect class="node-rect" x="750" y="380" width="300" height="60" />
+                    <text class="node-text" x="900" y="405">4. Effect persists over time?</text>
+                    <text class="node-text" x="900" y="425" style="font-size:11px;">Consistent in various circumstances?</text>
+                    
+                    <!-- Q4 NO Branch -->
+                    <line class="edge-line" x1="800" y1="440" x2="700" y2="500" />
+                    <text class="edge-label edge-label-no" x="730" y="465">NO</text>
+                    
+                    <rect class="result-rect-not node-rect" x="550" y="500" width="300" height="60" />
+                    <text class="node-text" x="700" y="525">⚡ Temporary Assembly</text>
+                    <text class="node-text" x="700" y="545" style="font-size:11px;">Unstable or situational</text>
+                    
+                    <!-- Q4 YES Branch -->
+                    <line class="edge-line" x1="1000" y1="440" x2="1000" y2="500" />
+                    <text class="edge-label edge-label-yes" x="1010" y="470">YES</text>
+                    
+                    <rect class="result-rect-system node-rect" x="850" y="500" width="300" height="80" />
+                    <text class="node-text" x="1000" y="525" style="font-size:16px; font-weight:bold;">⚙️ TRUE SYSTEM</text>
+                    <text class="node-text" x="1000" y="545" style="font-size:11px;">All criteria met:</text>
+                    <text class="node-text" x="1000" y="565" style="font-size:11px;">Identifiable, Interacting, Emergent, Persistent</text>
+                </svg>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentQuestion = 1;
+        let answers = {};
+        
+        function handleAnswer(questionNum, answer) {
+            answers[questionNum] = answer;
+            
+            // Update progress bar
+            const progress = (questionNum / 4) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            
+            // Hide current question
+            document.getElementById('q' + questionNum).classList.remove('active');
+            
+            // Determine next step
+            if (questionNum === 1 && !answer) {
+                showResult('unclear');
+            } else if (questionNum === 2 && !answer) {
+                showResult('collection');
+            } else if (questionNum === 3 && !answer) {
+                showResult('connected');
+            } else if (questionNum === 4 && !answer) {
+                showResult('temporary');
+            } else if (questionNum === 4 && answer) {
+                showResult('system');
+            } else {
+                // Show next question
+                document.getElementById('q' + (questionNum + 1)).classList.add('active');
+                currentQuestion = questionNum + 1;
+            }
+        }
+        
+        function showResult(type) {
+            const resultBox = document.getElementById('resultBox');
+            const resultIcon = document.getElementById('resultIcon');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultDescription = document.getElementById('resultDescription');
+            
+            resultBox.className = 'result-box';
+            
+            switch(type) {
+                case 'unclear':
+                    resultBox.classList.add('unclear');
+                    resultIcon.textContent = '🤔';
+                    resultTitle.textContent = 'Cannot Determine';
+                    resultDescription.textContent = 'You need to first identify what elements you\'re examining before determining if it\'s a system.';
+                    break;
+                case 'collection':
+                    resultBox.classList.add('not-system');
+                    resultIcon.textContent = '📦';
+                    resultTitle.textContent = 'Just a Collection';
+                    resultDescription.textContent = 'These are independent elements without interaction. Not a system.';
+                    break;
+                case 'connected':
+                    resultBox.classList.add('not-system');
+                    resultIcon.textContent = '🔗';
+                    resultTitle.textContent = 'Connected Elements';
+                    resultDescription.textContent = 'The elements interact but don\'t produce emergent properties. Not quite a system.';
+                    break;
+                case 'temporary':
+                    resultBox.classList.add('not-system');
+                    resultIcon.textContent = '⚡';
+                    resultTitle.textContent = 'Temporary Assembly';
+                    resultDescription.textContent = 'Shows emergent behavior but lacks persistence. Not a stable system.';
+                    break;
+                case 'system':
+                    resultBox.classList.add('system');
+                    resultIcon.textContent = '⚙️';
+                    resultTitle.textContent = 'TRUE SYSTEM!';
+                    resultDescription.textContent = 'Congratulations! All criteria are met: identifiable elements, interaction, emergence, and persistence. This is a genuine system!';
+                    break;
+            }
+            
+            document.getElementById('progressBar').style.width = '100%';
+            document.getElementById('result').classList.add('active');
+        }
+        
+        function resetQuiz() {
+            // Reset all questions
+            document.querySelectorAll('.question-container').forEach(q => {
+                q.classList.remove('active');
+            });
+            
+            // Show first question
+            document.getElementById('q1').classList.add('active');
+            
+            // Reset progress
+            document.getElementById('progressBar').style.width = '0%';
+            
+            // Reset variables
+            currentQuestion = 1;
+            answers = {};
+        }
+    </script>
+</body>
+</html>
